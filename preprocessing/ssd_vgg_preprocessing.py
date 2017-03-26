@@ -28,10 +28,10 @@ from nets import ssd_common
 slim = tf.contrib.slim
 
 # Resizing strategies.
-Resize = IntEnum('Resize', ('NONE',                # Nothing!
-                            'CENTRAL_CROP',        # Crop (and pad if necessary).
-                            'PAD_AND_RESIZE',      # Pad, and resize to output shape.
-                            'WARP_RESIZE'))        # Warp resize.
+Resize = IntEnum('Resize', ('NONE',  # Nothing!
+                            'CENTRAL_CROP',  # Crop (and pad if necessary).
+                            'PAD_AND_RESIZE',  # Pad, and resize to output shape.
+                            'WARP_RESIZE'))  # Warp resize.
 
 # VGG mean parameters.
 _R_MEAN = 123.
@@ -39,7 +39,7 @@ _G_MEAN = 117.
 _B_MEAN = 104.
 
 # Some training pre-processing parameters.
-BBOX_CROP_OVERLAP = 0.4        # Minimum overlap to keep a bbox after cropping.
+BBOX_CROP_OVERLAP = 0.4  # Minimum overlap to keep a bbox after cropping.
 CROP_RATIO_RANGE = (0.8, 1.2)  # Distortion ratio during cropping.
 EVAL_SIZE = (300, 300)
 
@@ -115,8 +115,8 @@ def apply_with_random_selector(x, func, num_cases):
     sel = tf.random_uniform([], maxval=num_cases, dtype=tf.int32)
     # Pass the real x only to one of the func calls.
     return control_flow_ops.merge([
-            func(control_flow_ops.switch(x, tf.equal(sel, case))[1], case)
-            for case in range(num_cases)])[0]
+        func(control_flow_ops.switch(x, tf.equal(sel, case))[1], case)
+        for case in range(num_cases)])[0]
 
 
 def distort_color(image, color_ordering=0, fast_mode=True, scope=None):
@@ -208,13 +208,13 @@ def distorted_bounding_box_crop(image,
         # Each bounding box has shape [1, num_boxes, box coords] and
         # the coordinates are ordered [ymin, xmin, ymax, xmax].
         bbox_begin, bbox_size, distort_bbox = tf.image.sample_distorted_bounding_box(
-                tf.shape(image),
-                bounding_boxes=tf.expand_dims(bboxes, 0),
-                min_object_covered=min_object_covered,
-                aspect_ratio_range=aspect_ratio_range,
-                area_range=area_range,
-                max_attempts=max_attempts,
-                use_image_if_no_bounding_boxes=True)
+            tf.shape(image),
+            bounding_boxes=tf.expand_dims(bboxes, 0),
+            min_object_covered=min_object_covered,
+            aspect_ratio_range=aspect_ratio_range,
+            area_range=area_range,
+            max_attempts=max_attempts,
+            use_image_if_no_bounding_boxes=True)
         distort_bbox = distort_bbox[0, 0]
 
         # Crop the image to the specified bounding box.
@@ -265,9 +265,8 @@ def preprocess_for_train(image, labels, bboxes,
 
         # Distort image and bounding boxes.
         dst_image = image
-        dst_image, labels, bboxes, distort_bbox = \
-            distorted_bounding_box_crop(image, labels, bboxes,
-                                        aspect_ratio_range=CROP_RATIO_RANGE)
+        dst_image, labels, bboxes, distort_bbox = distorted_bounding_box_crop(image, labels, bboxes,
+                                                                              aspect_ratio_range=CROP_RATIO_RANGE)
         # Resize image to output size.
         dst_image = tf_image.resize_image(dst_image, out_shape,
                                           method=tf.image.ResizeMethod.BILINEAR,

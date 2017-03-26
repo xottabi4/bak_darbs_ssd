@@ -14,7 +14,10 @@
 # ==============================================================================
 """Diverse TensorFlow utils, for training, evaluation and so on!
 """
+from __future__ import print_function
+
 import os
+import sys
 from pprint import pprint
 
 import tensorflow as tf
@@ -79,7 +82,7 @@ def print_configuration(flags, ssd_params, data_sources, save_dir=None):
         pprint(data_files, stream=stream)
         print('', file=stream)
 
-    print_config(None)
+    print_config(sys.stdout)
     # Save to a text file as well.
     if save_dir is not None:
         if not os.path.exists(save_dir):

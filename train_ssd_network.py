@@ -128,13 +128,13 @@ tf.app.flags.DEFINE_float(
 # Dataset Flags.
 # =========================================================================== #
 tf.app.flags.DEFINE_string(
-    'dataset_name', 'imagenet', 'The name of the dataset to load.')
+    'dataset_name', 'own_format', 'The name of the dataset to load.')
 tf.app.flags.DEFINE_integer(
-    'num_classes', 21, 'Number of classes to use in the dataset.')
+    'num_classes', 2, 'Number of classes to use in the dataset.')
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'train', 'The name of the train/test split.')
 tf.app.flags.DEFINE_string(
-    'dataset_dir', None, 'The directory where the dataset files are stored.')
+    'dataset_dir', 'my_own_data_set/serialized', 'The directory where the dataset files are stored.')
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
     'An offset for the labels in the dataset. This flag is primarily used to '
@@ -144,9 +144,9 @@ tf.app.flags.DEFINE_string(
     'model_name', 'ssd_300_vgg', 'The name of the architecture to train.')
 tf.app.flags.DEFINE_string(
     'preprocessing_name', None, 'The name of the preprocessing to use. If left '
-    'as `None`, then the model_name flag is used.')
+                                'as `None`, then the model_name flag is used.')
 tf.app.flags.DEFINE_integer(
-    'batch_size', 32, 'The number of samples in each batch.')
+    'batch_size', 8, 'The number of samples in each batch.')
 tf.app.flags.DEFINE_integer(
     'train_image_size', None, 'Train image size')
 tf.app.flags.DEFINE_integer('max_number_of_steps', None,
@@ -198,8 +198,7 @@ def main(_):
             global_step = slim.create_global_step()
 
         # Select the dataset.
-        dataset = dataset_factory.get_dataset(
-            FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+        dataset = dataset_factory.get_dataset(FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
 
         # Get the SSD network and its anchors.
         ssd_class = nets_factory.get_network(FLAGS.model_name)
@@ -210,8 +209,7 @@ def main(_):
 
         # Select the preprocessing function.
         preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
-        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-            preprocessing_name, is_training=True)
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(preprocessing_name, is_training=True)
 
         tf_utils.print_configuration(FLAGS.__flags, ssd_params,
                                      dataset.data_sources, FLAGS.train_dir)
@@ -227,15 +225,11 @@ def main(_):
                     common_queue_min=10 * FLAGS.batch_size,
                     shuffle=True)
             # Get for SSD network: image, labels, bboxes.
-            [image, shape, glabels, gbboxes] = provider.get(['image', 'shape',
-                                                             'object/label',
-                                                             'object/bbox'])
+            [image, shape, glabels, gbboxes] = provider.get(['image', 'shape', 'object/label', 'object/bbox'])
             # Pre-processing image, labels and bboxes.
-            image, glabels, gbboxes = \
-                image_preprocessing_fn(image, glabels, gbboxes, ssd_shape)
+            image, glabels, gbboxes = image_preprocessing_fn(image, glabels, gbboxes, ssd_shape)
             # Encode groundtruth labels and bboxes.
-            gclasses, glocalisations, gscores = \
-                ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
+            gclasses, glocalisations, gscores = ssd_net.bboxes_encode(glabels, gbboxes, ssd_anchors)
             batch_shape = [1] + [len(ssd_anchors)] * 3
 
             # Training batches and queue.
@@ -244,8 +238,7 @@ def main(_):
                 batch_size=FLAGS.batch_size,
                 num_threads=FLAGS.num_preprocessing_threads,
                 capacity=5 * FLAGS.batch_size)
-            b_image, b_gclasses, b_glocalisations, b_gscores = \
-                tf_utils.reshape_list(r, batch_shape)
+            b_image, b_gclasses, b_glocalisations, b_gscores = tf_utils.reshape_list(r, batch_shape)
 
             # Intermediate queueing: unique batch computation pipeline for all
             # GPUs running the training.
@@ -266,8 +259,7 @@ def main(_):
             # Construct SSD network.
             arg_scope = ssd_net.arg_scope(weight_decay=FLAGS.weight_decay)
             with slim.arg_scope(arg_scope):
-                predictions, localisations, logits, end_points = \
-                    ssd_net.net(b_image, is_training=True)
+                predictions, localisations, logits, end_points = ssd_net.net(b_image, is_training=True)
             # Add loss function.
             ssd_net.losses(logits, localisations,
                            b_gclasses, b_glocalisations, b_gscores,
@@ -362,7 +354,7 @@ def main(_):
         config = tf.ConfigProto(log_device_placement=False,
                                 gpu_options=gpu_options)
         saver = tf.train.Saver(max_to_keep=5,
-                               keep_checkpoint_every_n_hours=1.0,
+                               keep_checkpoint_every_n_hours=0.5,
                                write_version=2,
                                pad_step_number=False)
         slim.learning.train(

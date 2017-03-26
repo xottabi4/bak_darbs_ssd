@@ -19,3 +19,12 @@ __pycache__/
 
 checkpoints/VGG_VOC0712_SSD_*
 checkpoints/vgg_16.ckpt
+/my_own_data_set/
+/checkpoints/model.ckpt-12.index
+/checkpoints/model.ckpt-12.data-00000-of-00001
+/custom_demo_images.tar.gz
+/venv/
+
+
+.idea/
+*.pyc
